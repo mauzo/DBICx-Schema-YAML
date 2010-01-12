@@ -20,7 +20,7 @@ sub load_yaml_schema {
         \*{"$pkg\::DATA"}
     };
     my $res = "$pkg\::Result";
-    (my $pm = $pkg) =~ s!::!/!g;
+    (my $path = $res) =~ s!::!/!g;
 
     require DBIx::Class;
     require DBIx::Class::Schema;
@@ -29,13 +29,18 @@ sub load_yaml_schema {
 
     my $components  = $sch->{components};
     my $tabs        = $sch->{tables};
+
     for my $tab (@$tabs) {
         keys %$tab;
         my ($name, $defn) = each %$tab;
+
         my $class = "$res\::$name";
+        my $pm = "$path/$name.pm";
+
+        eval { require $pm } or $INC{$pm} = __FILE__;
+
         {
             no strict "refs";
-            $INC{"$pm/Result/$name.pm"} = __FILE__;
             push @{"$class\::ISA"}, "DBIx::Class";
         }
     }
