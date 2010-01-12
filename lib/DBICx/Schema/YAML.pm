@@ -27,7 +27,9 @@ sub load_yaml_schema {
     $pkg->inject_base($pkg, "DBIx::Class::Schema");
     Class::C3->reinitialize;
 
-    for my $tab (@$sch) {
+    my $components  = $sch->{components};
+    my $tabs        = $sch->{tables};
+    for my $tab (@$tabs) {
         keys %$tab;
         my ($name, $defn) = each %$tab;
         my $class = "$res\::$name";
@@ -39,12 +41,13 @@ sub load_yaml_schema {
     }
 
     Class::C3->reinitialize;
-    for my $tab (@$sch) {
+
+    for my $tab (@$tabs) {
         keys %$tab;
         my ($name, $defn) = each %$tab;
         my $class = "$res\::$name";
 
-        $class->load_components("Core");
+        $class->load_components(qw/Core/, @$components);
         $class->table("\L$name");
         
         for my $call (@$defn) {
