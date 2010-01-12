@@ -24,10 +24,8 @@ sub load_yaml_schema {
 
     require DBIx::Class;
     require DBIx::Class::Schema;
-    {
-        no strict "refs";
-        push @{"$pkg\::ISA"}, "DBIx::Class::Schema";
-    }
+    $pkg->inject_base($pkg, "DBIx::Class::Schema");
+    Class::C3->reinitialize;
 
     for my $tab (@$sch) {
         keys %$tab;
@@ -40,6 +38,7 @@ sub load_yaml_schema {
         }
     }
 
+    Class::C3->reinitialize;
     for my $tab (@$sch) {
         keys %$tab;
         my ($name, $defn) = each %$tab;
