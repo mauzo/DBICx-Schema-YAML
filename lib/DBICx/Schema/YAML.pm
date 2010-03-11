@@ -56,7 +56,7 @@ sub load_yaml_schema {
         # see if there's a real .pm somewhere
         local @INC = grep !ref || $_ != $_[0], @INC;
         # do doesn't check %INC, so will happily recurse
-        eval { do $pm };
+        eval { do $pm; $@ and die $@; 1; } or die "$pm failed: $@";
         
         open my $PM, "<", \"1;";
         return $PM;
