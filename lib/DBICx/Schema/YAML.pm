@@ -21,6 +21,24 @@ sub import {
     *{"$to\::load_yaml_schema"} = \&{"$from\::load_yaml_schema"};
 }
 
+sub docalls {
+    my ($on, $calls) = @_;
+    for my $call (@$calls) {
+        my ($meth, $args) = each %$call;
+        $args = aref $args;
+        my $onn = $on;
+        my @meths = split /\./, $meth;
+        $meth = pop @meths;
+        for (@meths) {
+            #warn "calling $onn->$_";
+            $onn = $onn->$_;
+        }
+        #local $" = ", ";
+        #warn "calling $onn->$meth(@$args)";
+        $onn->$meth(@$args);
+    }
+}
+
 sub load_yaml_schema {
     my $pkg = shift;
     my $sch = Load scalar slurp do {
@@ -33,12 +51,7 @@ sub load_yaml_schema {
     $pkg->inject_base($pkg, "DBIx::Class::Schema");
     Class::C3->reinitialize;
 
-    my $global = $sch->{global};
-    for my $call (@$global) {
-        my ($meth, $args) = each %$call;
-        $args = aref $args;
-        $pkg->$meth(@$args);
-    }
+    docalls $pkg, $sch->{global};
 
     my $components  = $sch->{components};
     my $tabs        = $sch->{tables};
@@ -58,13 +71,8 @@ sub load_yaml_schema {
 
         $class->load_components(qw/Core/, @$components);
         $class->table("\L$name");
-    
-        my $defn = $tabs->{$name};
-        for my $call (@$defn) {
-            my ($meth, $args) = each %$call;
-            $args= aref $args;
-            $class->$meth(@$args);
-        }
+
+        docalls $class, $tabs->{$name};
 
         # see if there's a real .pm somewhere
         local @INC = grep !ref || $_ != $_[0], @INC;
