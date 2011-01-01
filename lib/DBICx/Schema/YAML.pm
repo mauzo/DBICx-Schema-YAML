@@ -5,8 +5,14 @@ use warnings;
 
 use version; our $VERSION = "0.02";
 
-use YAML::Tiny  qw/Load/;
-use File::Slurp qw/slurp/;
+use YAML::XS            qw/Load/;
+use File::Slurp         qw/slurp/;
+use Scalar::Util        qw/reftype/;
+
+sub aref ($) {
+     ref $_[0] && reftype $_[0] eq "ARRAY"
+        ? $_[0] : [ $_[0] ];
+}
 
 sub import {
     my $from = shift;
@@ -26,6 +32,13 @@ sub load_yaml_schema {
     require DBIx::Class::Schema;
     $pkg->inject_base($pkg, "DBIx::Class::Schema");
     Class::C3->reinitialize;
+
+    my $global = $sch->{global};
+    for my $call (@$global) {
+        my ($meth, $args) = each %$call;
+        $args = aref $args;
+        $pkg->$meth(@$args);
+    }
 
     my $components  = $sch->{components};
     my $tabs        = $sch->{tables};
@@ -49,7 +62,7 @@ sub load_yaml_schema {
         my $defn = $tabs->{$name};
         for my $call (@$defn) {
             my ($meth, $args) = each %$call;
-            ref $args or $args = [$args];
+            $args= aref $args;
             $class->$meth(@$args);
         }
 
