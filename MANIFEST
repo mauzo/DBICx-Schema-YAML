@@ -1,0 +1,4 @@
+Build.PL
+lib/DBICx/Schema/YAML.pm
+MANIFEST			This list of files
+META.yml
